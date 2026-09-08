@@ -2,11 +2,19 @@ import json
 import time
 from pathlib import Path
 from typing import List, Dict, Any
+from urllib.parse import urlparse
+
 import requests
 from app.config import settings
 from app.evidence.models import CandidateResult
 from app.search.base import BaseReverseImageSearcher
 
+def is_social_media_url(url: str) -> bool:
+    """Checks if a given URL belongs to a known social media platform domain."""
+    if not url:
+        return False
+    netloc = urlparse(url).netloc.lower()
+    return any(domain in netloc for domain in getattr(settings, "SOCIAL_MEDIA_DOMAINS", ()))
 
 class SerpApiLensSearcher(BaseReverseImageSearcher):
     """
@@ -196,6 +204,17 @@ class SerpApiLensSearcher(BaseReverseImageSearcher):
                             extract_item(sub, "knowledge_graph")
 
         print(f"      Total deduplicated candidate web URLs extracted: {len(candidates)}")
+
+        if getattr(settings, "FILTER_SOCIAL_ONLY", True):
+            social_candidates = [c for c in candidates if is_social_media_url(c.url)]
+            if social_candidates:
+                print(f"      Filtered {len(social_candidates)} social media candidate(s)")
+                if len(social_candidates) >= settings.MAX_CANDIDATES:
+                    return social_candidates[:settings.MAX_CANDIDATES]
+                else:
+                    non_social = [c for c in candidates if c not in social_candidates]
+                    return (social_candidates + non_social)[:settings.MAX_CANDIDATES]
+
         return candidates[:settings.MAX_CANDIDATES]
 
     def _save_raw_response(self, data: dict):

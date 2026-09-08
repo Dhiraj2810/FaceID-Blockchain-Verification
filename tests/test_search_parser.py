@@ -39,3 +39,36 @@ def test_serpapi_empty_matches():
     candidates = searcher.parse_response(mock_data)
 
     assert candidates == []
+
+
+def test_social_media_domain_filtering_and_capping():
+    from app.search.serpapi_lens import is_social_media_url
+    from app.config import settings
+
+    assert is_social_media_url("https://instagram.com/p/123") is True
+    assert is_social_media_url("https://x.com/user/status/456") is True
+    assert is_social_media_url("https://randomwebsite.com/article") is False
+
+    mock_matches = []
+    # Add 15 generic matches
+    for i in range(15):
+        mock_matches.append({
+            "title": f"Generic Web Site {i}",
+            "link": f"https://generic-blog-{i}.com/page"
+        })
+    # Add 3 social media matches
+    mock_matches.append({"title": "Insta Post", "link": "https://instagram.com/p/test"})
+    mock_matches.append({"title": "Tweet Post", "link": "https://twitter.com/user/status/123"})
+    mock_matches.append({"title": "Reddit Post", "link": "https://reddit.com/r/pics/123"})
+
+    mock_data = {"visual_matches": mock_matches}
+    searcher = SerpApiLensSearcher(api_key="test_key")
+    candidates = searcher.parse_response(mock_data)
+
+    # Must be capped at MAX_CANDIDATES (10)
+    assert len(candidates) <= settings.MAX_CANDIDATES
+    # Social media candidates must be prioritized at top of list
+    social_urls = [c.url for c in candidates if is_social_media_url(c.url)]
+    assert len(social_urls) == 3
+    assert candidates[0].url == "https://instagram.com/p/test"
+

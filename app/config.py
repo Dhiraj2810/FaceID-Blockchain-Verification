@@ -23,9 +23,16 @@ try:
         FACE_MATCH_THRESHOLD: float = float(os.getenv("FACE_MATCH_THRESHOLD", "0.70"))
         FACE_DET_SIZE: int = int(os.getenv("FACE_DET_SIZE", "640"))
         FACE_DET_THRESHOLD: float = float(os.getenv("FACE_DET_THRESHOLD", "0.25"))
-        MAX_CANDIDATES: int = int(os.getenv("MAX_CANDIDATES", "10"))
+        MAX_CANDIDATES: int = min(10, int(os.getenv("MAX_CANDIDATES", "10")))
         REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "45"))
         MAX_IMAGE_SIZE_MB: int = int(os.getenv("MAX_IMAGE_SIZE_MB", "10"))
+        FILTER_SOCIAL_ONLY: bool = os.getenv("FILTER_SOCIAL_ONLY", "true").lower() in ("true", "1", "yes")
+        SOCIAL_MEDIA_DOMAINS: tuple = (
+            "instagram.com", "twitter.com", "x.com", "facebook.com",
+            "linkedin.com", "reddit.com", "tiktok.com", "youtube.com",
+            "pinterest.com", "threads.net", "tumblr.com", "vk.com",
+            "medium.com", "flickr.com"
+        )
 
         INPUT_DIR: Path = BASE_DIR / "input"
         RESULTS_DIR: Path = BASE_DIR / "results"
@@ -46,9 +53,16 @@ except ImportError:
             self.FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.70"))
             self.FACE_DET_SIZE = int(os.getenv("FACE_DET_SIZE", "640"))
             self.FACE_DET_THRESHOLD = float(os.getenv("FACE_DET_THRESHOLD", "0.25"))
-            self.MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "10"))
+            self.MAX_CANDIDATES = min(10, int(os.getenv("MAX_CANDIDATES", "10")))
             self.REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "45"))
             self.MAX_IMAGE_SIZE_MB = int(os.getenv("MAX_IMAGE_SIZE_MB", "10"))
+            self.FILTER_SOCIAL_ONLY = os.getenv("FILTER_SOCIAL_ONLY", "true").lower() in ("true", "1", "yes")
+            self.SOCIAL_MEDIA_DOMAINS = (
+                "instagram.com", "twitter.com", "x.com", "facebook.com",
+                "linkedin.com", "reddit.com", "tiktok.com", "youtube.com",
+                "pinterest.com", "threads.net", "tumblr.com", "vk.com",
+                "medium.com", "flickr.com"
+            )
             self.INPUT_DIR = BASE_DIR / "input"
             self.RESULTS_DIR = BASE_DIR / "results"
 

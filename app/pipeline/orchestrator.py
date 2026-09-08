@@ -10,7 +10,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from app.config import settings
 from app.face.detector import detect_faces, load_image
 from app.face.embedding import generate_embedding
-from app.search.serpapi_lens import SerpApiLensSearcher
+from app.search.serpapi_lens import SerpApiLensSearcher, is_social_media_url
 from app.evidence.extractor import process_candidates
 from app.crypto.hashing import sha256_file
 from app.blockchain.verifier import BlockchainService
@@ -217,9 +217,23 @@ class PipelineOrchestrator:
                 except Exception:
                     pass
 
+            # Filter & cap combined candidate list to social media domains & MAX_CANDIDATES limit
+            if getattr(settings, "FILTER_SOCIAL_ONLY", True):
+                social_cands = [c for c in candidates if is_social_media_url(c.url)]
+                if social_cands:
+                    if len(social_cands) >= settings.MAX_CANDIDATES:
+                        candidates = social_cands[:settings.MAX_CANDIDATES]
+                    else:
+                        non_social_cands = [c for c in candidates if c not in social_cands]
+                        candidates = (social_cands + non_social_cands)[:settings.MAX_CANDIDATES]
+                else:
+                    candidates = candidates[:settings.MAX_CANDIDATES]
+            else:
+                candidates = candidates[:settings.MAX_CANDIDATES]
+
             candidate_count = len(candidates)
             if verbose:
-                print(f"      ✓ Combined & Deduplicated Web Candidates: {candidate_count} total candidate web posts")
+                print(f"      ✓ Combined & Deduplicated Candidates (Capped at {settings.MAX_CANDIDATES}): {candidate_count} web candidate(s)")
 
             result.search = {
                 "provider": "Google Lens (Dual-Strategy)",
