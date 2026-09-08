@@ -142,14 +142,19 @@ export default function WebEvidenceCard({ pipelineResult }) {
                   </div>
 
                   <div className="flex items-center gap-2 font-mono text-xs flex-shrink-0">
-                    <span className="text-slate-400">{(cand.similarity * 100).toFixed(0)}%</span>
+                    <span className="text-slate-400" title={cand.reason || cand.status}>
+                      {(cand.similarity * 100).toFixed(0)}%
+                    </span>
                     {cand.matched ? (
                       <span className="bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] px-1.5 py-0.5 rounded font-bold">
                         MATCH
                       </span>
                     ) : (
-                      <span className="bg-slate-900 text-slate-500 border border-slate-800 text-[10px] px-1.5 py-0.5 rounded">
-                        NO MATCH
+                      <span
+                        className="bg-slate-900 text-slate-500 border border-slate-800 text-[10px] px-1.5 py-0.5 rounded"
+                        title={cand.reason || cand.status}
+                      >
+                        {cand.status === "0 faces detected" ? "NO FACE" : "NO MATCH"}
                       </span>
                     )}
                   </div>

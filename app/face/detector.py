@@ -145,9 +145,20 @@ def detect_faces(
     except Exception:
         pass
 
-    # Strategy 1: If image is ultra-high resolution (>1920px max dim), downscale to max 1280px first
+    # Strategy 0: If image is a small web thumbnail (<400px max dim), upscale to 480px first for robust detection
     max_dim = max(w, h)
-    if max_dim > 1920:
+    if max_dim < 400:
+        scale_0 = 480.0 / max_dim
+        w0, h0 = int(w * scale_0), int(h * scale_0)
+        img_scaled0 = cv2.resize(bgr_img, (w0, h0), interpolation=cv2.INTER_CUBIC)
+        faces_attempt0 = analyzer.get(img_scaled0) or []
+        attempts_log.append(f"Attempt 0 (small thumbnail upscaled {w0}x{h0}): {len(faces_attempt0)} faces detected")
+        if faces_attempt0:
+            raw_faces = faces_attempt0
+            scale_factor_used = scale_0
+
+    # Strategy 1: If image is ultra-high resolution (>1920px max dim), downscale to max 1280px first
+    if not raw_faces and max_dim > 1920:
         scale_1 = 1280.0 / max_dim
         w1, h1 = int(w * scale_1), int(h * scale_1)
         img_scaled1 = cv2.resize(bgr_img, (w1, h1), interpolation=cv2.INTER_AREA)
@@ -202,9 +213,10 @@ def detect_faces(
             raw_faces = faces_attempt3
             scale_factor_used = scale_3
 
-    # Strategy 4: Try 1.5x and 2.0x controlled upscaling for small or cropped faces
-    if not raw_faces and not fast_mode:
-        for scale_4 in [1.5, 2.0]:
+    # Strategy 4: Try 1.5x, 2.0x, and 3.0x controlled upscaling for small or cropped faces (always for small thumbnails < 500px)
+    if not raw_faces and (max_dim < 500 or not fast_mode):
+        scales_to_try = [2.0, 3.0] if max_dim < 300 else [1.5, 2.0]
+        for scale_4 in scales_to_try:
             w4, h4 = int(w * scale_4), int(h * scale_4)
             img_scaled4 = cv2.resize(bgr_img, (w4, h4), interpolation=cv2.INTER_CUBIC)
             faces_attempt4 = analyzer.get(img_scaled4) or []
@@ -289,7 +301,7 @@ def detect_faces(
             cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
             face_cascade = cv2.CascadeClassifier(cascade_path)
             gray = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-            cv_faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(60, 60))
+            cv_faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(24, 24))
             attempts_log.append(f"Attempt 7 (OpenCV Haar Cascade fallback): {len(cv_faces)} faces detected")
 
             rec_model = analyzer.models.get("recognition") if hasattr(analyzer, "models") else None

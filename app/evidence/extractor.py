@@ -23,6 +23,11 @@ def eval_single_candidate(args):
     domain = urlparse(candidate.url).netloc or "web"
 
     img, content_bytes = download_candidate_image(image_url)
+    if (img is None or content_bytes is None) and candidate.thumbnail_url and candidate.url != candidate.thumbnail_url:
+        img, content_bytes = download_candidate_image(candidate.url)
+        if img is not None:
+            image_url = candidate.url
+
     if img is None or content_bytes is None:
         eval_dict = {
             "title": candidate.title,
@@ -42,6 +47,9 @@ def eval_single_candidate(args):
     try:
         with _MODEL_LOCK:
             faces, diag = detect_faces(img, fast_mode=True)
+            if not faces:
+                # Retry with full multi-scale upscaling & OpenCV Haar Cascade fallback for candidate thumbnails
+                faces, diag = detect_faces(img, fast_mode=False)
     except Exception as e:
         eval_dict = {
             "title": candidate.title,
