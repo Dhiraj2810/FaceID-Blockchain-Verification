@@ -47,9 +47,6 @@ def eval_single_candidate(args):
     try:
         with _MODEL_LOCK:
             faces, diag = detect_faces(img, fast_mode=True)
-            if not faces:
-                # Retry with full multi-scale upscaling & OpenCV Haar Cascade fallback for candidate thumbnails
-                faces, diag = detect_faces(img, fast_mode=False)
     except Exception as e:
         eval_dict = {
             "title": candidate.title,

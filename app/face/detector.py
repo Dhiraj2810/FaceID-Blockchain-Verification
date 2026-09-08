@@ -135,15 +135,8 @@ def detect_faces(
     attempts_log = []
     raw_faces = []
     scale_factor_used = 1.0
-
-    # Ensure det_size is set to optimal 640x640 by default if config is 1024/default
     det_size_val = settings.FACE_DET_SIZE if settings.FACE_DET_SIZE > 0 else 640
     det_thresh_val = settings.FACE_DET_THRESHOLD if settings.FACE_DET_THRESHOLD > 0 else 0.25
-
-    try:
-        analyzer.prepare(ctx_id=-1, det_size=(det_size_val, det_size_val), det_thresh=det_thresh_val)
-    except Exception:
-        pass
 
     # Strategy 0: If image is a small web thumbnail (<400px max dim), upscale to 480px first for robust detection
     max_dim = max(w, h)
@@ -227,19 +220,7 @@ def detect_faces(
                 scale_factor_used = scale_4
                 break
 
-    # Strategy 5: Adaptive lower detection threshold (0.15) if still no faces found
-    if not raw_faces and not fast_mode:
-        try:
-            analyzer.prepare(ctx_id=-1, det_size=(det_size_val, det_size_val), det_thresh=0.15)
-            faces_attempt5 = analyzer.get(bgr_img) or []
-            attempts_log.append(f"Attempt 5 (adaptive det_thresh=0.15): {len(faces_attempt5)} faces detected")
-            if faces_attempt5:
-                raw_faces = faces_attempt5
-                scale_factor_used = 1.0
-        except Exception:
-            pass
-
-    # Strategy 6: Contrast enhancement (CLAHE) + max 800px resize
+    # Strategy 5: Contrast enhancement (CLAHE) + max 800px resize
     if not raw_faces and not fast_mode:
         scale_6 = min(1.0, 800.0 / max_dim)
         w6, h6 = int(w * scale_6), int(h * scale_6)
